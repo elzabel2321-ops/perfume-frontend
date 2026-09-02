@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { shopApi } from "@/lib/shopApi";
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [order, setOrder] = useState<any>(null);
   const [error, setError] = useState("");
+
   const orderId = searchParams.get("orderId") || "";
 
   useEffect(() => {
@@ -30,13 +31,19 @@ export default function PaymentSuccessPage() {
         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
           <span className="text-4xl text-green-600">✓</span>
         </div>
-        <h1 className="text-3xl font-bold text-[#2A2421]">Payment Successful</h1>
+
+        <h1 className="text-3xl font-bold text-[#2A2421]">
+          Payment Successful
+        </h1>
+
         <p className="mt-3 text-gray-600">
           Your payment was verified on the server. Refreshing this page will not create another order.
         </p>
 
         {error && (
-          <div className="mt-4 rounded-xl bg-red-50 p-4 text-red-700">{error}</div>
+          <div className="mt-4 rounded-xl bg-red-50 p-4 text-red-700">
+            {error}
+          </div>
         )}
 
         {order && (
@@ -45,10 +52,14 @@ export default function PaymentSuccessPage() {
               <span className="text-gray-500">Order</span>
               <span className="font-semibold">{order.orderNumber}</span>
             </div>
+
             <div className="mb-3 flex justify-between">
               <span className="text-gray-500">Payment</span>
-              <span className="font-semibold uppercase">{order.paymentStatus}</span>
+              <span className="font-semibold uppercase">
+                {order.paymentStatus}
+              </span>
             </div>
+
             <div className="flex justify-between">
               <span className="text-gray-500">Total</span>
               <span className="font-semibold">
@@ -65,11 +76,29 @@ export default function PaymentSuccessPage() {
           >
             View order
           </Link>
-          <Link href="/products" className="w-full rounded-xl border py-3 font-semibold">
+
+          <Link
+            href="/products"
+            className="w-full rounded-xl border py-3 font-semibold"
+          >
             Continue shopping
           </Link>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#F7F3EC]">
+          Loading...
+        </div>
+      }
+    >
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }

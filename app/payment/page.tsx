@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { shopApi } from "@/lib/shopApi";
 import { clearCart } from "@/lib/cart";
 
-export default function PaymentPage() {
+function PaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
@@ -41,8 +41,11 @@ export default function PaymentPage() {
       return;
     }
 
-    const confirmToken = sessionStorage.getItem("checkoutConfirmToken") || "";
+    const confirmToken =
+      sessionStorage.getItem("checkoutConfirmToken") || "";
+
     const id = paymentId || order?.payment?._id || order?.payment;
+
     if (!id || !confirmToken) {
       setError("Payment session is missing. Please checkout again.");
       return;
@@ -51,13 +54,16 @@ export default function PaymentPage() {
     try {
       setPaying(true);
       setError("");
+
       const result = await shopApi.confirmPayment(
         String(id),
         confirmToken,
         session.accessToken
       );
+
       clearCart();
       sessionStorage.removeItem("checkoutConfirmToken");
+
       router.push(
         `/payment/success?orderId=${result.order.id}&paymentId=${result.payment.id}`
       );
@@ -70,8 +76,13 @@ export default function PaymentPage() {
 
   const handleFail = async () => {
     if (!session?.accessToken || !paymentId) return;
+
     try {
-      await shopApi.failPayment(String(paymentId), session.accessToken);
+      await shopApi.failPayment(
+        String(paymentId),
+        session.accessToken
+      );
+
       setError("Payment cancelled.");
     } catch (err: any) {
       setError(err?.message || "Could not cancel payment.");
@@ -85,23 +96,31 @@ export default function PaymentPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F7F3EC] px-4">
       <div className="w-full max-w-lg rounded-3xl bg-white p-10 shadow-xl">
-        <h1 className="text-3xl font-bold text-[#2A2421]">Payment</h1>
+        <h1 className="text-3xl font-bold text-[#2A2421]">
+          Payment
+        </h1>
+
         <p className="mt-2 text-gray-500">
           Simulated card payment. The backend verifies this request with a one-time token.
         </p>
 
         {error && (
-          <div className="mt-4 rounded-xl bg-red-50 p-4 text-red-700">{error}</div>
+          <div className="mt-4 rounded-xl bg-red-50 p-4 text-red-700">
+            {error}
+          </div>
         )}
 
         {order && (
           <div className="mt-6 rounded-2xl bg-[#FAF7F2] p-5 text-sm">
             <p>Order {order.orderNumber}</p>
+
             <p className="mt-2 text-2xl font-bold">
               {Number(order.totalAmount || 0).toFixed(2)}
             </p>
+
             <p className="mt-1 capitalize text-gray-500">
-              Payment: {order.paymentStatus} / Order: {order.orderStatus}
+              Payment: {order.paymentStatus} / Order:{" "}
+              {order.orderStatus}
             </p>
           </div>
         )}
@@ -127,10 +146,27 @@ export default function PaymentPage() {
           Cancel payment
         </button>
 
-        <Link href="/orders" className="mt-4 block text-center text-sm text-[#B38C2B]">
+        <Link
+          href="/orders"
+          className="mt-4 block text-center text-sm text-[#B38C2B]"
+        >
           View my orders
         </Link>
       </div>
     </main>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-10 text-center">
+          Loading...
+        </div>
+      }
+    >
+      <PaymentContent />
+    </Suspense>
   );
 }
